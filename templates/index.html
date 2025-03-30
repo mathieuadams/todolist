@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>My To Do list</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+    <div class="max-w-2xl mx-auto">
+    <!--save button -->
+        <div class="flex justify-end mb-4">
+            <button onclick="saveList()" class="bg-green-500 text-white px-4 py-2 rounded-xl hover:bg-green-600 ">Save</button>
+        </div>
+    <!-- Editable List Title -->
+        <input id="listTitle" class="text-3xl font-bold mb-4 w-full bg-transparent focus:outline-none text-left" onkeydown="if (event.key==='Enter') saveList()" value="My List"/>
+
+    <!-- Input to Add New Item -->
+        <div class="mb-4">
+            <input id="itemInput" type="text" placeholder="Add new item ...." class="w-full p-3 text-lg
+            focus:outline-none bg-transparent rounded-xl shadow-sm"
+            onkeydown="if (event.key==='Enter') addItem()"/>
+        </div>
+    <!-- List Item -->
+        <ul id="itemList" class="space-y-2"></ul>
+    </div>
+  <script>
+    const itemInput = document.getElementById('itemInput');
+    const itemList = document.getElementById('itemList');
+    const listTitle = document.getElementById('listTitle');
+    let items = [];
+
+    function addItem() {
+      const value = itemInput.value.trim();
+      if (value !== '') {
+        const item = { text: value, completed: false, due: '' };
+        items.push(item);
+        renderList();
+        itemInput.value = '';
+        itemInput.focus();
+      }
+    }
+
+    function toggleComplete(index) {
+      items[index].completed = !items[index].completed;
+      renderList();
+    }
+
+    function updateDueDate(index, date) {
+      items[index].due = date;
+    }
+
+    function removeItem(index) {
+      items.splice(index, 1);
+      renderList();
+    }
+
+    function renderList() {
+      itemList.innerHTML = '';
+      items.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-left justify-between p-3 bg-transparent rounded-xl shadow';
+
+        const label = document.createElement('label');
+        label.className = 'flex items-left space-x-3 w-full';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = item.completed;
+        checkbox.onchange = () => toggleComplete(index);
+
+        const span = document.createElement('span');
+        span.textContent = item.text;
+        span.className = `flex-1 text-lg ${item.completed ? 'line-through text-gray-400' : ''}`;
+
+        const dueInput = document.createElement('input');
+        dueInput.type = 'date';
+        dueInput.className = 'border border-gray-300 rounded p-1 text-sm';
+        dueInput.value = item.due;
+        dueInput.onchange = (e) => updateDueDate(index, e.target.value);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '✕';
+        removeBtn.className = 'text-red-500 hover:text-red-700 ml-2';
+        removeBtn.onclick = () => removeItem(index);
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        label.appendChild(dueInput);
+
+        li.appendChild(label);
+        li.appendChild(removeBtn);
+        itemList.appendChild(li);
+      });
+    }
+
+function saveList() {
+  const title = listTitle.value;
+  const data = { title, items };
+
+  fetch("/api/lists", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(response => {
+    alert(response.message);
+  })
+  .catch(err => {
+    alert("Error saving list.");
+    console.error(err);
+  });
+}
+  </script>
+</body>
+</html>
