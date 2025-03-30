@@ -30,16 +30,40 @@
     const listTitle = document.getElementById('listTitle');
     let items = [];
 
-    function addItem() {
-      const value = itemInput.value.trim();
-      if (value !== '') {
-        const item = { text: value, completed: false, due: '' };
-        items.push(item);
-        renderList();
-        itemInput.value = '';
-        itemInput.focus();
-      }
-    }
+function addItem() {
+  const value = itemInput.value.trim();
+  const title = listTitle.value.trim();
+
+  if (value !== '' && title !== '') {
+    const newItem = { text: value, completed: false, due: '' };
+
+    // Add it to local UI
+    items.push(newItem);
+    renderList();
+    itemInput.value = '';
+    itemInput.focus();
+
+    // Immediately send to backend
+    fetch("/api/item", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title: title,
+        item: newItem
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      newItem.id = data.id;
+      console.log("Item saved:", data.message);
+    })
+    .catch(err => {
+      console.error("Failed to save item:", err);
+    });
+  }
+}
 
     function toggleComplete(index) {
       items[index].completed = !items[index].completed;
@@ -93,6 +117,38 @@
         itemList.appendChild(li);
       });
     }
+
+function updateDueDate(index, date) {
+  items[index].due = date;
+  const id = items[index].id;
+
+  if (id !== undefined) {
+    fetch(`/api/item/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ due: date })
+    });
+  }
+}
+
+function toggleComplete(index) {
+  items[index].completed = !items[index].completed;
+  const id = items[index].id;
+
+  if (id !== undefined) {
+    fetch(`/api/item/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ completed: items[index].completed })
+    });
+  }
+
+  renderList();
+}
 
 function saveList() {
   const title = listTitle.value;
